@@ -1,0 +1,152 @@
+{
+  "title": "Nova Post",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Налаштування Ukrposhta",
+        "description": "Для відстеження Ukrposhta не потрібен обліковий запис чи поштовий індекс — хаб створюється одразу. Посилки додавайте пізніше через параметри інтеграції або сервіс `ukrposhta.track_parcel`."
+      }
+    },
+    "abort": {
+      "already_configured": "Ukrposhta вже налаштовано."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Параметри Ukrposhta",
+        "menu_options": {
+          "parcels": "Посилки",
+          "settings": "Налаштування"
+        },
+        "sections": {
+          "parcels": {
+            "name": "Посилки",
+            "data": {
+              "add": "Додати посилку",
+              "remove": "Видалити посилки"
+            },
+            "data_description": {
+              "add": "Введіть номер відстеження Ukrposhta, щоб почати його відстежувати. Його можна знайти в підтвердженні відправлення."
+            }
+          },
+          "delivered": {
+            "name": "Доставлені посилки",
+            "data": {
+              "delivered_filter_type": "Фільтрувати за",
+              "delivered_filter_amount": "Кількість"
+            },
+            "data_description": {
+              "delivered_filter_type": "Показувати доставлені посилки за останні X днів або обмежити до X останніх.",
+              "delivered_filter_amount": "Кількість днів або посилок для показу."
+            }
+          },
+          "history": {
+            "name": "Історія посилки",
+            "data": {
+              "include_history": "Додати історію статусів"
+            },
+            "data_description": {
+              "include_history": "Додає атрибут історії для кожної посилки з усіма подіями відстеження (час, статус, оригінальний текст). Типово вимкнено."
+            }
+          }
+        }
+      },
+      "parcels": {
+        "title": "Керування посилками",
+        "data": {
+          "tracking_codes": "Коди відстеження"
+        }
+      },
+      "settings": {
+        "title": "Налаштування",
+        "data": {
+          "delivered_filter_type": "Доставлені посилки: фільтрувати за",
+          "delivered_filter_amount": "Доставлені посилки: кількість",
+          "include_history": "Додати історію статусів"
+        }
+      }
+    },
+    "error": {
+      "invalid_tracking_code": "Це не схоже на номер відстеження Ukrposhta.",
+      "already_tracked": "Ця посилка вже відстежується."
+    }
+  },
+  "selector": {
+    "delivered_filter_type": {
+      "options": {
+        "days": "Дні",
+        "parcels": "Кількість посилок"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Відстежити посилку",
+      "description": "Почати відстеження посилки за номером відстеження Ukrposhta.",
+      "fields": {
+        "tracking_code": {
+          "name": "Номер відстеження",
+          "description": "Номер відстеження Ukrposhta."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Припинити відстеження посилки",
+      "description": "Припинити відстеження посилки за номером відстеження Ukrposhta.",
+      "fields": {
+        "tracking_code": {
+          "name": "Номер відстеження",
+          "description": "Номер відстеження Ukrposhta, яку потрібно припинити відстежувати."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Посилку зареєстровано",
+      "parcel_status_changed": "Статус посилки змінився",
+      "parcel_delivered": "Посилку доставлено",
+      "parcel_delivery_time_changed": "Очікуваний час доставки посилки змінився"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Оновити"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Доставки"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Посилки в дорозі",
+        "unit_of_measurement": "посилок"
+      },
+      "next_delivery": {
+        "name": "Наступна доставка"
+      },
+      "en_route_to_pickup_point": {
+        "name": "Прямує до відділення",
+        "unit_of_measurement": "посилок"
+      },
+      "awaiting_pickup": {
+        "name": "Готово до отримання",
+        "unit_of_measurement": "посилок"
+      },
+      "delivered_parcels": {
+        "name": "Доставлені посилки",
+        "unit_of_measurement": "посилок"
+      },
+      "last_update": {
+        "name": "Останнє успішне оновлення"
+      },
+      "parcel": {
+        "name": "Посилка {barcode}"
+      }
+    }
+  }
+}
