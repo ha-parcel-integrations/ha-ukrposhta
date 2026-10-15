@@ -95,6 +95,26 @@ def _warn_unmapped_status(code: str, reported: ParcelStatus) -> None:
     )
 
 
+def _warn_unmapped_event(code: str) -> None:
+    """Log an unmapped code buried in the history once.
+
+    The newest event's warning names what the parcel was reported as instead,
+    so that one is left to the status derivation; without this one an
+    unrecognised code further back would never be reported at all.
+    """
+    shown = code if code.isdigit() else "non-numeric"
+    if shown in _unmapped_statuses_logged:
+        return
+    _unmapped_statuses_logged.add(shown)
+    _LOGGER.warning(
+        "Unrecognised Ukrposhta status — help us map it. Open an issue "
+        "and paste this line: %s\n  status=%s → kept in the parcel's history "
+        "without a status",
+        NEW_ISSUE_URL,
+        shown,
+    )
+
+
 def map_event_status(code: str | None) -> ParcelStatus | None:
     """Map one event code to a canonical status, or ``None``.
 
@@ -170,11 +190,14 @@ def classify_events(events: list | None) -> list[tuple[dict, ParcelStatus | None
 
     Once a return leg has opened (``31200`` or a ``Return: `` label), every
     later event is ``returning`` — including the forward delivered codes the
-    return leg reuses. Unmapped codes pair with ``None``.
+    return leg reuses. Unmapped codes pair with ``None`` and warn once; the
+    newest event is left to the status derivation, whose warning can also name
+    what the parcel was reported as.
     """
     classified: list[tuple[dict, ParcelStatus | None]] = []
     in_return = False
-    for event in events or []:
+    candidates = list(events or [])
+    for index, event in enumerate(candidates):
         if not isinstance(event, dict):
             _warn_unproven_shape("event is not an object")
             continue
@@ -187,6 +210,8 @@ def classify_events(events: list | None) -> list[tuple[dict, ParcelStatus | None
         if code is None and not in_return:
             _warn_unproven_shape("event without a code")
         status = ParcelStatus.RETURNING if in_return else map_event_status(code)
+        if status is None and code is not None and index < len(candidates) - 1:
+            _warn_unmapped_event(code)
         classified.append((event, status))
     return classified
 

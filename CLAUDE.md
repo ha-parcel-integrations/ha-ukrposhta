@@ -58,7 +58,10 @@ you act in one of these areas:
 - **`raw` is the full record** — the event list exactly as the carrier sent
   it, untrimmed. Privacy lives in `diagnostics.py`, whose `TO_REDACT` covers
   every person-, office- and date-bearing key plus `raw` and `history`
-  wholesale. No log line or warning carries a payload value other than the numeric event code of an unmapped status.
+  wholesale. No log line or warning carries a payload value other than the
+  numeric event code of an unmapped status. Every unrecognised code is
+  reported once per HA run, including one buried further back in the history,
+  which only affects that history entry's status.
 - **Status comes from the final event, else the newest mappable one.** An
   unmapped final event falls back through the earlier events and warns once
   per code, even when that rescues it (the numeric event code and the status reported instead; no event name or

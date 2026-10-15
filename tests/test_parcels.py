@@ -150,12 +150,21 @@ def test_fallback_skips_earlier_unmapped_events():
     assert _statuses("10601", "27900", "29500") == ParcelStatus.REGISTERED
 
 
-def test_nothing_mappable_is_unknown_with_one_warning(caplog):
+def test_nothing_mappable_is_unknown_and_every_code_is_reported_once(caplog):
     with caplog.at_level(logging.WARNING):
         assert _statuses("29500", "27900") == ParcelStatus.UNKNOWN
         assert _statuses("29500", "27900") == ParcelStatus.UNKNOWN
-    assert caplog.text.count("Unrecognised Ukrposhta status") == 1
-    assert "29500" not in caplog.text
+    # one line per unrecognised code, however often it is seen
+    assert caplog.text.count("Unrecognised Ukrposhta status") == 2
+    assert caplog.text.count("29500") == 1
+    assert caplog.text.count("27900") == 1
+
+
+def test_a_code_buried_in_the_history_is_reported_too(caplog):
+    with caplog.at_level(logging.WARNING):
+        assert _statuses("29500", "41000") == ParcelStatus.DELIVERED
+    assert "29500" in caplog.text
+    assert "without a status" in caplog.text
 
 
 def test_fallback_never_walks_back_past_the_return_leg():
