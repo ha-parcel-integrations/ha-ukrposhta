@@ -18,7 +18,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import UkrposhtaApiClient, UkrposhtaApiError, UkrposhtaCredentialError
+from .api import UkrposhtaApiClient, UkrposhtaApiError, UkrposhtaRejectedError
 from .const import (
     CONF_INCLUDE_HISTORY,
     CONF_PARCELS,
@@ -169,9 +169,9 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
         # Consecutive 429 responses across all tracked parcels, for the
         # exponential backoff in Section 3. Reset to 0 on any success.
         self._consecutive_429 = 0
-        # Whether the credential warning was already logged for the current
+        # Whether the rejection warning was already logged for the current
         # run of failures; cleared by the next successful fetch.
-        self._credential_warned = False
+        self._rejection_warned = False
         # Last tier computed by _hottest_tier_minutes — surfaced in
         # diagnostics; ``None`` before the first refresh and whenever polling
         # is fully suspended (nothing tracked, or everything delivered).
@@ -237,7 +237,7 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
     ) -> list[dict | None | BaseException]:
         """Fetch codes one at a time with a pause between requests.
 
-        Stops at the first rate-limit or credential refusal: the remaining
+        Stops at the first rate-limit or refusal: the remaining
         codes would only be refused too, so they are reported with the same
         error instead of being requested.
         """
@@ -249,7 +249,7 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
                 results.append(await self._client.async_get_parcel(code))
             except (UkrposhtaApiError, aiohttp.ClientError) as err:
                 results.append(err)
-                if isinstance(err, UkrposhtaCredentialError) or (
+                if isinstance(err, UkrposhtaRejectedError) or (
                     isinstance(err, UkrposhtaApiError) and err.status_code == 429
                 ):
                     results.extend([err] * (len(codes) - index - 1))
@@ -281,9 +281,9 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
         saw_429 = False
         last_logged: BaseException | None = None
         for code, result in zip(codes_to_fetch, results):
-            if isinstance(result, UkrposhtaCredentialError):
-                if not self._credential_warned:
-                    self._credential_warned = True
+            if isinstance(result, UkrposhtaRejectedError):
+                if not self._rejection_warned:
+                    self._rejection_warned = True
                     _LOGGER.warning(
                         "Ukrposhta tracking requests are being rejected; an "
                         "integration update may be needed. If this persists, "
@@ -319,7 +319,7 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
                 # Unknown code, or not scanned yet. Keep prior data if we have
                 # it, otherwise show a pending placeholder so the user still
                 # sees the parcel they asked us to track.
-                self._credential_warned = False
+                self._rejection_warned = False
                 raws_by_code[code] = self._raw_cache.get(code) or {
                     "trackingNumber": code
                 }
@@ -328,7 +328,7 @@ class UkrposhtaCoordinator(DataUpdateCoordinator[list[dict]]):
             # The response's own tracking number can be missing on edge
             # payloads; fall back to the code we asked for so the sensor keeps
             # its key.
-            self._credential_warned = False
+            self._rejection_warned = False
             result.setdefault("trackingNumber", code)
             self._raw_cache[code] = result
             raws_by_code[code] = result

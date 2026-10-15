@@ -45,7 +45,7 @@ you act in one of these areas:
 
 ## Carrier-specific notes
 
-- **A refused request (HTTP 401/403) raises `UkrposhtaCredentialError`;** the
+- **A refused request raises `UkrposhtaRejectedError`;** the
   coordinator logs one `WARNING` per run of failures (no values, no barcode)
   and raises `UpdateFailed`. It never starts a reauth flow or falls back to
   another surface. Like a 429, this fails the whole poll: entities go
@@ -53,7 +53,8 @@ you act in one of these areas:
   for a failure that affects every code. The per-code payload cache is kept
   and used again once fetching recovers.
 - **One paced request per code**, sequential with `REQUEST_PACING_SECONDS`
-  between them. A 429 or credential refusal stops the batch and fails the poll, as described above. 429 backoff is the shared one.
+  between them. A 429 or a refusal stops the batch and fails the poll, as
+  described above. 429 backoff is the shared one.
 - **`raw` is the full record** — the event list exactly as the carrier sent
   it, untrimmed. Privacy lives in `diagnostics.py`, whose `TO_REDACT` covers
   every person-, office- and date-bearing key plus `raw` and `history`

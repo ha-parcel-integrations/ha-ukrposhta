@@ -6,8 +6,8 @@ The coordinator relies on this contract:
   (oldest first, events exactly as the carrier sent them) on success,
 * returns ``None`` when the carrier has no events for the code (a normal,
   expected state — never an error),
-* raises :class:`UkrposhtaCredentialError` when the carrier refuses the
-  request's credential (or none is configured), and :class:`UkrposhtaApiError`
+* raises :class:`UkrposhtaRejectedError` when the carrier refuses the
+  request outright, and :class:`UkrposhtaApiError`
   for anything else, with ``status_code`` set on a non-2xx response and
   ``retry_after`` set when a 429's ``Retry-After`` could be parsed as seconds,
 * lets ``aiohttp.ClientError`` propagate untouched.
@@ -41,8 +41,8 @@ class UkrposhtaApiError(Exception):
         self.retry_after = retry_after
 
 
-class UkrposhtaCredentialError(UkrposhtaApiError):
-    """Raised when the carrier credential is missing or refused."""
+class UkrposhtaRejectedError(UkrposhtaApiError):
+    """Raised when the carrier refuses the request."""
 
 
 def _validate_events(payload: Any) -> list[dict[str, Any]]:
@@ -61,7 +61,7 @@ class UkrposhtaApiClient:
     def __init__(
         self, session: aiohttp.ClientSession, bearer: str | None = None
     ) -> None:
-        """Initialise the client; ``bearer`` defaults to the module constant."""
+        """Initialise the client; the request header defaults to the constant."""
         self._session = session
         self._bearer = CARRIER_BEARER if bearer is None else bearer
 
@@ -71,12 +71,12 @@ class UkrposhtaApiClient:
         Returns ``None`` when the endpoint reports no events for the code.
         """
         if not self._bearer:
-            raise UkrposhtaCredentialError("missing request credential")
+            raise UkrposhtaRejectedError("the request cannot be made")
         url = TRACKING_API_URL.format(tracking_code=quote(tracking_code, safe=""))
         headers = {"Authorization": f"Bearer {self._bearer}"}
         async with self._session.get(url, headers=headers) as response:
             if response.status in (401, 403):
-                raise UkrposhtaCredentialError(
+                raise UkrposhtaRejectedError(
                     f"HTTP {response.status}", status_code=response.status
                 )
             if response.status == 429:

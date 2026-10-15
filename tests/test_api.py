@@ -9,7 +9,7 @@ from custom_components.ukrposhta import api
 from custom_components.ukrposhta.api import (
     UkrposhtaApiClient,
     UkrposhtaApiError,
-    UkrposhtaCredentialError,
+    UkrposhtaRejectedError,
 )
 
 from .payloads import DELIVERED_CODE, TEST_BEARER, wire_event
@@ -43,7 +43,7 @@ async def test_empty_credential_raises_without_a_request(monkeypatch):
     monkeypatch.setattr(api, "CARRIER_BEARER", "")
     session = _session_returning(200, [])
     client = UkrposhtaApiClient(session)
-    with pytest.raises(UkrposhtaCredentialError):
+    with pytest.raises(UkrposhtaRejectedError):
         await client.async_get_parcel(CODE)
     session.get.assert_not_called()
 
@@ -85,7 +85,7 @@ async def test_empty_event_list_is_track_not_found():
 @pytest.mark.parametrize("status", [401, 403])
 async def test_rejected_credential_raises_credential_error(status):
     client = _client(_session_returning(status, "<html>denied</html>"))
-    with pytest.raises(UkrposhtaCredentialError) as err:
+    with pytest.raises(UkrposhtaRejectedError) as err:
         await client.async_get_parcel(CODE)
     assert err.value.status_code == status
     assert TEST_BEARER not in str(err.value)
@@ -115,7 +115,7 @@ async def test_other_status_raises():
     with pytest.raises(UkrposhtaApiError) as err:
         await client.async_get_parcel(CODE)
     assert err.value.status_code == 500
-    assert not isinstance(err.value, UkrposhtaCredentialError)
+    assert not isinstance(err.value, UkrposhtaRejectedError)
 
 
 async def test_non_json_body_raises_without_echoing_it():

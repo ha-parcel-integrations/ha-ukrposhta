@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ukrposhta.api import UkrposhtaApiError, UkrposhtaCredentialError
+from custom_components.ukrposhta.api import UkrposhtaApiError, UkrposhtaRejectedError
 from custom_components.ukrposhta.const import (
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
@@ -489,7 +489,7 @@ async def test_credential_refusal_warns_once_and_fails_the_update(hass, caplog):
     )
     entry.add_to_hass(hass)
     client = AsyncMock()
-    client.async_get_parcel.side_effect = UkrposhtaCredentialError(
+    client.async_get_parcel.side_effect = UkrposhtaRejectedError(
         "HTTP 403", status_code=403
     )
     coordinator = UkrposhtaCoordinator(hass, client, entry)
@@ -514,13 +514,13 @@ async def test_credential_warning_returns_after_a_success(hass, caplog):
     client = AsyncMock()
     coordinator = UkrposhtaCoordinator(hass, client, entry)
 
-    client.async_get_parcel.side_effect = UkrposhtaCredentialError("HTTP 401")
+    client.async_get_parcel.side_effect = UkrposhtaRejectedError("HTTP 401")
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
     client.async_get_parcel.side_effect = None
     client.async_get_parcel.return_value = active_sample()
     await coordinator._async_update_data()
-    client.async_get_parcel.side_effect = UkrposhtaCredentialError("HTTP 401")
+    client.async_get_parcel.side_effect = UkrposhtaRejectedError("HTTP 401")
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
 
@@ -599,13 +599,13 @@ async def test_credential_warning_returns_after_a_no_events_result(hass, caplog)
     client = AsyncMock()
     coordinator = UkrposhtaCoordinator(hass, client, entry)
 
-    client.async_get_parcel.side_effect = UkrposhtaCredentialError("HTTP 401")
+    client.async_get_parcel.side_effect = UkrposhtaRejectedError("HTTP 401")
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
     client.async_get_parcel.side_effect = None
     client.async_get_parcel.return_value = None
     await coordinator._async_update_data()
-    client.async_get_parcel.side_effect = UkrposhtaCredentialError("HTTP 401")
+    client.async_get_parcel.side_effect = UkrposhtaRejectedError("HTTP 401")
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
 
