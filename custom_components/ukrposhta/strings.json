@@ -27,7 +27,7 @@
               "remove": "Remove parcels"
             },
             "data_description": {
-              "add": "Enter an Ukrposhta tracking code to start tracking it. You find it on the shipping confirmation."
+              "add": "Enter a Ukrposhta tracking code to start tracking it. You find it on the shipping confirmation."
             }
           },
           "delivered": {
@@ -68,7 +68,7 @@
       }
     },
     "error": {
-      "invalid_tracking_code": "That does not look like an Ukrposhta tracking code.",
+      "invalid_tracking_code": "That does not look like a Ukrposhta tracking code.",
       "already_tracked": "That parcel is already being tracked."
     }
   },

@@ -25,7 +25,7 @@ CARRIER_BEARER = "c3e02b53-3b1d-386e-b676-141ffa054c57"
 
 
 class UkrposhtaApiError(Exception):
-    """Raised when an Ukrposhta API call returns an unexpected response."""
+    """Raised when a Ukrposhta API call returns an unexpected response."""
 
     def __init__(
         self,

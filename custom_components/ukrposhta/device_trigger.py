@@ -38,7 +38,7 @@ TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
 async def async_get_triggers(
     hass: HomeAssistant, device_id: str
 ) -> list[dict[str, str]]:
-    """Return the list of parcel triggers for an Ukrposhta device."""
+    """Return the list of parcel triggers for a Ukrposhta device."""
     return [
         {
             CONF_PLATFORM: "device",
