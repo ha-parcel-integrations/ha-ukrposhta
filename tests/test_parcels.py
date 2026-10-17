@@ -55,6 +55,15 @@ from .payloads import (
         ("20700", ParcelStatus.IN_TRANSIT),
         ("20800", ParcelStatus.IN_TRANSIT),
         ("21500", ParcelStatus.IN_TRANSIT),
+        ("17100", ParcelStatus.REGISTERED),
+        ("21600", ParcelStatus.IN_TRANSIT),
+        ("70800", ParcelStatus.IN_TRANSIT),
+        ("2201", ParcelStatus.IN_TRANSIT),
+        ("4006", ParcelStatus.IN_TRANSIT),
+        ("82700", ParcelStatus.IN_TRANSIT),
+        ("82800", ParcelStatus.IN_TRANSIT),
+        ("27900", ParcelStatus.IN_TRANSIT),
+        ("29500", ParcelStatus.OUT_FOR_DELIVERY),
         ("21400", ParcelStatus.AT_PICKUP_POINT),
         ("21700", ParcelStatus.AT_PICKUP_POINT),
         ("31100", ParcelStatus.PROBLEM),
@@ -70,11 +79,12 @@ def test_map_event_status_known(code, expected):
 
 
 def test_status_map_holds_only_the_documented_codes():
-    assert len(_STATUS_MAP) == 13
+    assert len(_STATUS_MAP) == 35
 
 
-@pytest.mark.parametrize("code", ["29500", "27900", "24300", "2201", "99999"])
+@pytest.mark.parametrize("code", ["24300", "99999"])
 def test_unproven_codes_are_unmapped(code):
+    """24300 is seen live but ambiguous; see the note beside the map."""
     assert map_event_status(code) is None
 
 
@@ -95,21 +105,21 @@ def _statuses(*codes):
 
 def test_unmapped_final_event_falls_back_to_newest_mappable_event(caplog):
     with caplog.at_level(logging.WARNING):
-        assert _statuses("10601", "20700", "29500") == ParcelStatus.IN_TRANSIT
-        assert _statuses("10601", "20700", "29500") == ParcelStatus.IN_TRANSIT
+        assert _statuses("10601", "20700", "93100") == ParcelStatus.IN_TRANSIT
+        assert _statuses("10601", "20700", "93100") == ParcelStatus.IN_TRANSIT
     # A rescued fallback still warns, once, without the code.
     assert caplog.text.count("Unrecognised Ukrposhta status") == 1
-    assert "status=29500 → reported as 'in_transit'" in caplog.text
+    assert "status=93100 → reported as 'in_transit'" in caplog.text
     assert "issues/new?template=unrecognised_status.yml" in caplog.text
 
 
 def test_each_unmapped_code_warns_even_when_they_rescue_to_the_same_status(caplog):
     with caplog.at_level(logging.WARNING):
-        assert _statuses("20700", "29500") == ParcelStatus.IN_TRANSIT
-        assert _statuses("20700", "27900") == ParcelStatus.IN_TRANSIT
-        assert _statuses("20700", "27900") == ParcelStatus.IN_TRANSIT
-    assert "status=29500" in caplog.text
-    assert "status=27900" in caplog.text
+        assert _statuses("20700", "93100") == ParcelStatus.IN_TRANSIT
+        assert _statuses("20700", "94200") == ParcelStatus.IN_TRANSIT
+        assert _statuses("20700", "94200") == ParcelStatus.IN_TRANSIT
+    assert "status=93100" in caplog.text
+    assert "status=94200" in caplog.text
     assert caplog.text.count("Unrecognised Ukrposhta status") == 2
 
 
@@ -117,13 +127,13 @@ def test_the_warning_logs_the_code_but_no_free_text(caplog):
     raw = sample(
         [
             event("20700", "2026-04-24T10:00:00", "Processed", "EXAMPLE555555"),
-            event("29500", "2026-04-25T10:00:00", "Out somewhere", "EXAMPLE555555"),
+            event("93100", "2026-04-25T10:00:00", "Out somewhere", "EXAMPLE555555"),
         ],
         "EXAMPLE555555",
     )
     with caplog.at_level(logging.WARNING):
         normalize_parcel(raw)
-    assert "status=29500" in caplog.text
+    assert "status=93100" in caplog.text
     assert "Out somewhere" not in caplog.text
     assert "EXAMPLE555555" not in caplog.text
 
@@ -139,7 +149,7 @@ def test_delivered_at_comes_from_the_event_that_carries_delivered():
     events = [
         event("20700", "2026-04-28T10:00:00", "Processed"),
         event("41000", "2026-04-29T13:12:42", "Delivered"),
-        event("29500", "2026-04-30T09:00:00", "Unmapped follow-up"),
+        event("93100", "2026-04-30T09:00:00", "Unmapped follow-up"),
     ]
     parcel = normalize_parcel(sample(events, "C"))
     assert parcel["delivered"] is True
@@ -147,29 +157,29 @@ def test_delivered_at_comes_from_the_event_that_carries_delivered():
 
 
 def test_fallback_skips_earlier_unmapped_events():
-    assert _statuses("10601", "27900", "29500") == ParcelStatus.REGISTERED
+    assert _statuses("10601", "94200", "93100") == ParcelStatus.REGISTERED
 
 
 def test_nothing_mappable_is_unknown_and_every_code_is_reported_once(caplog):
     with caplog.at_level(logging.WARNING):
-        assert _statuses("29500", "27900") == ParcelStatus.UNKNOWN
-        assert _statuses("29500", "27900") == ParcelStatus.UNKNOWN
+        assert _statuses("93100", "94200") == ParcelStatus.UNKNOWN
+        assert _statuses("93100", "94200") == ParcelStatus.UNKNOWN
     # one line per unrecognised code, however often it is seen
     assert caplog.text.count("Unrecognised Ukrposhta status") == 2
-    assert caplog.text.count("29500") == 1
-    assert caplog.text.count("27900") == 1
+    assert caplog.text.count("93100") == 1
+    assert caplog.text.count("94200") == 1
 
 
 def test_a_code_buried_in_the_history_is_reported_too(caplog):
     with caplog.at_level(logging.WARNING):
-        assert _statuses("29500", "41000") == ParcelStatus.DELIVERED
-    assert "29500" in caplog.text
+        assert _statuses("93100", "41000") == ParcelStatus.DELIVERED
+    assert "93100" in caplog.text
     assert "without a status" in caplog.text
 
 
 def test_fallback_never_walks_back_past_the_return_leg():
     """An unmapped scan inside the return leg must not resurrect in_transit."""
-    assert _statuses("20700", "31200", "29500") == ParcelStatus.RETURNING
+    assert _statuses("20700", "31200", "93100") == ParcelStatus.RETURNING
 
 
 def test_fallback_never_resurrects_a_delivered_state_after_the_return_leg():
@@ -238,12 +248,12 @@ def test_return_label_alone_opens_the_return_leg():
 def test_unmapped_code_inside_the_return_leg_does_not_warn(caplog):
     events = [
         event("31200", "2026-04-30T09:00:00", "Returned"),
-        event("29500", "2026-05-01T09:00:00", "Return: Something"),
+        event("93100", "2026-05-01T09:00:00", "Return: Something"),
     ]
     with caplog.at_level(logging.WARNING):
         parcel = normalize_parcel(sample(events, ACTIVE_CODE))
     assert parcel["status"] == ParcelStatus.RETURNING
-    assert "29500" not in caplog.text
+    assert "93100" not in caplog.text
 
 
 def test_return_history_is_returning_throughout_the_leg():
@@ -428,7 +438,7 @@ def test_delivered_event_with_a_bad_date_has_no_delivered_at(caplog):
 
 def test_warnings_carry_no_payload_values(caplog):
     raw = sample(
-        [event("29500", "2026-04-25T10:00:00", "Out somewhere", "EXAMPLE555555")],
+        [event("93100", "2026-04-25T10:00:00", "Out somewhere", "EXAMPLE555555")],
         "EXAMPLE555555",
     )
     with caplog.at_level(logging.WARNING):

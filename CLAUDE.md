@@ -72,8 +72,19 @@ you act in one of these areas:
 - **Fields that are `None` on purpose:** `pickup`, `pickup_point` (pending in
   `PENDING_CAPABILITIES`), `sender`, `receiver`, `planned_from`, `planned_to`,
   `weight`, `dimensions`. Because there is no ETA, the calendar and
-  `next_delivery` stay empty and `out_for_delivery` is not mapped, so polling
-  never reaches the hot tier.
+  `next_delivery` stay empty. **A parcel can now reach the hot tier**: `29500`
+  maps to `out_for_delivery`, and the hot-tier rule treats a parcel with no
+  `planned_from` at all as hot, so one out for delivery polls every 15 minutes
+  until it lands.
+- **The international vocabulary is live-confirmed (2026-10-17).** A sweep of
+  nine real parcels, domestic and cross-border, added the offices of exchange,
+  the air-transport consignment codes, the customs pair (presented then
+  released) and `29500 Item out for physical delivery` — the first real
+  `out_for_delivery` evidence this carrier has produced. Customs steps map to
+  `in_transit`, matching the rest of the suite: a parcel in customs is moving.
+  `24300 Held at inward office of exchange` is deliberately left unmapped — it
+  reads as a hold but sat mid-way through an otherwise normal customs run, so
+  it falls back to the previous mappable scan and keeps reporting.
 - **Event dates carry no UTC offset and are published as `Europe/Kyiv`
   (`CARRIER_TIMEZONE` in `const.py`).** That zone is an assumption: no payload
   can prove the wall-clock zone. If a parcel shows a consistent offset (for

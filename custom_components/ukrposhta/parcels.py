@@ -48,12 +48,41 @@ NEW_ISSUE_URL = (
 
 # Keys are the numeric event codes the endpoint reports (as strings). Codes
 # outside this map surface as ``unknown`` plus a one-shot warning.
+# Each code's own ``eventName`` is what places it below; the international
+# codes come from a 2026-10-17 sweep of nine real parcels, domestic and
+# cross-border. Customs steps count as transit, matching the rest of the
+# suite: a parcel in customs is moving, not stuck.
 _STATUS_MAP: dict[str, ParcelStatus] = {
     "10601": ParcelStatus.REGISTERED,
     "10100": ParcelStatus.REGISTERED,
+    "17100": ParcelStatus.REGISTERED,  # Acceptance
     "20700": ParcelStatus.IN_TRANSIT,
     "20800": ParcelStatus.IN_TRANSIT,
     "21500": ParcelStatus.IN_TRANSIT,
+    # offices of exchange, outward then inward
+    "21600": ParcelStatus.IN_TRANSIT,
+    "27200": ParcelStatus.IN_TRANSIT,
+    "77600": ParcelStatus.IN_TRANSIT,
+    "70800": ParcelStatus.IN_TRANSIT,
+    "60700": ParcelStatus.IN_TRANSIT,
+    "67300": ParcelStatus.IN_TRANSIT,
+    "90800": ParcelStatus.IN_TRANSIT,
+    "97700": ParcelStatus.IN_TRANSIT,
+    "2201": ParcelStatus.IN_TRANSIT,  # accepted by the destination post
+    # air transport of the consignment carrying the item
+    "4006": ParcelStatus.IN_TRANSIT,
+    "4021": ParcelStatus.IN_TRANSIT,
+    "4024": ParcelStatus.IN_TRANSIT,
+    "4074": ParcelStatus.IN_TRANSIT,
+    # customs: presented, then released
+    "80700": ParcelStatus.IN_TRANSIT,
+    "82700": ParcelStatus.IN_TRANSIT,
+    "89000": ParcelStatus.IN_TRANSIT,
+    "80800": ParcelStatus.IN_TRANSIT,
+    "82800": ParcelStatus.IN_TRANSIT,
+    "89100": ParcelStatus.IN_TRANSIT,
+    "27900": ParcelStatus.IN_TRANSIT,  # arrival at the delivery office
+    "29500": ParcelStatus.OUT_FOR_DELIVERY,  # out for physical delivery
     "21400": ParcelStatus.AT_PICKUP_POINT,
     "21700": ParcelStatus.AT_PICKUP_POINT,
     "31100": ParcelStatus.PROBLEM,
@@ -63,6 +92,11 @@ _STATUS_MAP: dict[str, ParcelStatus] = {
     "41000": ParcelStatus.DELIVERED,
     "48000": ParcelStatus.DELIVERED,
 }
+
+# ``24300`` "Held at inward office of exchange" is seen live but deliberately
+# left out: it reads as a hold yet sits mid-way through an otherwise normal
+# customs run, so whether it ever means a real problem is unknown. It falls
+# back to the previous mappable scan and keeps reporting.
 
 # A refused parcel opens a return leg whose scans reuse the forward codes
 # (including the delivered ones) and carry this label prefix. Everything from
