@@ -1,4 +1,5 @@
 """Tests for Ukrposhta device triggers."""
+
 from unittest.mock import AsyncMock
 
 from custom_components.ukrposhta.const import DOMAIN

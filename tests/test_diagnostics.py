@@ -1,10 +1,9 @@
 """Tests for Ukrposhta diagnostics."""
+
 from datetime import timedelta
 from unittest.mock import MagicMock
 
-from custom_components.ukrposhta.diagnostics import (
-    async_get_config_entry_diagnostics,
-)
+from custom_components.ukrposhta.diagnostics import async_get_config_entry_diagnostics
 
 
 async def test_diagnostics_redacts_and_counts(hass):

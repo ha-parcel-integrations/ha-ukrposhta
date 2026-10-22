@@ -1,6 +1,7 @@
 """Tests for the pure parcel-mapping helpers (no Home Assistant instance)."""
+
+from datetime import UTC, datetime, timedelta
 import logging
-from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
@@ -48,7 +49,7 @@ from .payloads import (
 
 
 @pytest.mark.parametrize(
-    "code,expected",
+    ("code", "expected"),
     [
         ("10601", ParcelStatus.REGISTERED),
         ("10100", ParcelStatus.REGISTERED),
@@ -198,7 +199,7 @@ def test_resolve_status_without_events_is_silently_unknown(caplog):
 
 def test_parse_iso_handles_z_naive_and_garbage():
     assert parse_iso("2026-04-29T13:12:42Z").tzinfo is not None
-    assert parse_iso("2026-04-29T13:12:42").tzinfo == timezone.utc
+    assert parse_iso("2026-04-29T13:12:42").tzinfo == UTC
     assert parse_iso("not-a-date") is None
     assert parse_iso(None) is None
 
@@ -303,7 +304,9 @@ def test_build_history_drops_an_unparseable_date_and_warns_once(caplog):
 
 
 def test_build_history_uses_only_the_code_without_a_name():
-    history = build_history(classify_events([event("20700", "2026-04-24T10:00:00", "")]))
+    history = build_history(
+        classify_events([event("20700", "2026-04-24T10:00:00", "")])
+    )
     assert history[0]["raw_status"] == "20700"
 
 
@@ -367,8 +370,8 @@ def test_a_capability_is_never_both_populated_and_pending():
 def test_capabilities_match_what_normalize_parcel_actually_returns():
     delivered = normalize_parcel(delivered_sample())
     with_history = normalize_parcel(delivered_sample(), include_history=True)
-    assert CAPABILITIES == {"url", "history"}
-    assert PENDING_CAPABILITIES == {"pickup_point"}
+    assert {"url", "history"} == CAPABILITIES
+    assert {"pickup_point"} == PENDING_CAPABILITIES
     assert delivered["url"] is not None
     assert with_history["history"] is not None
 
@@ -409,7 +412,10 @@ def test_normalize_active_parcel():
 
 
 def test_normalize_uses_the_final_events_barcode_over_the_registered_code():
-    raw = sample([event("20700", "2026-04-24T10:00:00", "x", barcode="EXAMPLE777777")], "EXAMPLE1")
+    raw = sample(
+        [event("20700", "2026-04-24T10:00:00", "x", barcode="EXAMPLE777777")],
+        "EXAMPLE1",
+    )
     assert normalize_parcel(raw)["barcode"] == "EXAMPLE777777"
 
 
@@ -500,7 +506,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},

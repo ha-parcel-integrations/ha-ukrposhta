@@ -12,6 +12,7 @@ The coordinator relies on this contract:
   ``retry_after`` set when a 429's ``Retry-After`` could be parsed as seconds,
 * lets ``aiohttp.ClientError`` propagate untouched.
 """
+
 from __future__ import annotations
 
 from typing import Any

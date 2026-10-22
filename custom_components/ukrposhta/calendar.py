@@ -1,4 +1,5 @@
 """Calendar platform for the Ukrposhta parcel tracker integration."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -20,17 +21,20 @@ PARALLEL_UPDATES = 0
 _DEFAULT_EVENT_DURATION = timedelta(hours=1)
 
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: UkrposhtaConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Ukrposhta deliveries calendar from a config entry."""
-    async_add_entities([UkrposhtaDeliveriesCalendar(entry.runtime_data.coordinator, entry)])
+    async_add_entities(
+        [UkrposhtaDeliveriesCalendar(entry.runtime_data.coordinator, entry)]
+    )
 
 
-class UkrposhtaDeliveriesCalendar(CoordinatorEntity[UkrposhtaCoordinator], CalendarEntity):
+class UkrposhtaDeliveriesCalendar(
+    CoordinatorEntity[UkrposhtaCoordinator], CalendarEntity
+):
     """A read-only calendar of expected Ukrposhta deliveries.
 
     Each active tracked parcel with a known delivery moment becomes an event.

@@ -1,4 +1,5 @@
 """Tests for the Ukrposhta refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.ukrposhta.button import UkrposhtaRefreshButton
