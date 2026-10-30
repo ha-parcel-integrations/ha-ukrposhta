@@ -118,6 +118,7 @@ Standard HA removal applies: **Settings → Devices & Services → Ukrposhta →
 | `sensor.ukrposhta_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.ukrposhta_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.ukrposhta_next_delivery` | Earliest expected delivery moment across all active parcels (Ukrposhta reports none, so this stays empty) |
+| `sensor.ukrposhta_en_route_to_pickup_point` | Incoming parcels on their way to a pickup point that have not arrived yet |
 | `sensor.ukrposhta_awaiting_pickup` | Incoming parcels that are ready to collect at a pickup point |
 | `sensor.ukrposhta_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `calendar.ukrposhta_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
