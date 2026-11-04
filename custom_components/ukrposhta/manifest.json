@@ -1,6 +1,7 @@
 {
   "domain": "ukrposhta",
   "name": "Ukrposhta",
+  "categories": ["productivity_information"],
   "codeowners": [
     "@peter-mdf"
   ],
