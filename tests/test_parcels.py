@@ -19,6 +19,7 @@ from custom_components.ukrposhta.const import (
 from custom_components.ukrposhta.coordinator import UkrposhtaCoordinator
 from custom_components.ukrposhta.parcels import (
     _STATUS_MAP,
+    _carrier_iso,
     apply_delivered_filter,
     build_history,
     classify_events,
@@ -215,8 +216,16 @@ def test_tracking_url_is_encoded():
 
 
 def test_return_leg_never_maps_forward_delivered_code_to_delivered():
-    """A return leg reuses 41000; it must not read as delivered to the recipient."""
+    """A return leg reuses 41000; it is back at the sender, not delivered."""
     parcel = normalize_parcel(sample(returned_events(), ACTIVE_CODE))
+    assert parcel["status"] == ParcelStatus.RETURNING
+    assert parcel["delivered"] is True
+    assert parcel["delivered_at"] == "2026-05-03T12:00:00+03:00"
+    assert parcel["planned_from"] is None
+
+
+def test_return_leg_still_on_its_way_is_not_delivered():
+    parcel = normalize_parcel(sample(returned_events()[:-1], ACTIVE_CODE))
     assert parcel["status"] == ParcelStatus.RETURNING
     assert parcel["delivered"] is False
     assert parcel["delivered_at"] is None
@@ -243,7 +252,7 @@ def test_return_label_alone_opens_the_return_leg():
     ]
     parcel = normalize_parcel(sample(events, ACTIVE_CODE))
     assert parcel["status"] == ParcelStatus.RETURNING
-    assert parcel["delivered"] is False
+    assert parcel["delivered"] is True
 
 
 def test_unmapped_code_inside_the_return_leg_does_not_warn(caplog):
@@ -396,12 +405,12 @@ def test_normalize_unproven_fields_stay_none():
         "receiver",
         "planned_from",
         "planned_to",
-        "pickup",
         "pickup_point",
         "weight",
         "dimensions",
     ):
         assert parcel[key] is None
+    assert parcel["pickup"] is True
 
 
 def test_normalize_active_parcel():
@@ -627,7 +636,7 @@ def _returned_raw():
     return {"trackingNumber": ACTIVE_CODE, "events": scrubbed_returned_parcel_events()}
 
 
-def test_real_return_leg_ends_in_a_return_delivered_41000_that_is_not_delivered():
+def test_real_return_leg_ends_in_a_return_delivered_41000_back_at_the_sender():
     raw = _returned_raw()
     last = raw["events"][-1]
     assert last["event"] == "41000"
@@ -636,8 +645,9 @@ def test_real_return_leg_ends_in_a_return_delivered_41000_that_is_not_delivered(
     parcel = normalize_parcel(raw, include_history=True)
 
     assert parcel["status"] == ParcelStatus.RETURNING
-    assert parcel["delivered"] is False
-    assert parcel["delivered_at"] is None
+    assert parcel["delivered"] is True
+    assert parcel["delivered_at"] == _carrier_iso(last["date"])
+    assert parcel["pickup"] is True
     assert parcel["raw_status"] == "41000 Return: Delivered to Sender"
 
 
@@ -654,19 +664,22 @@ def test_real_return_leg_history_is_forward_then_returning_from_the_refusal():
     assert statuses[4:] == [ParcelStatus.RETURNING] * 10
 
 
-def test_real_return_leg_prefix_alone_would_also_keep_it_undelivered():
+def test_real_return_leg_prefix_alone_still_marks_the_leg():
     """Without the 31200 scan the Return: labels still mark the leg."""
     raw = _returned_raw()
     raw["events"] = [e for e in raw["events"] if e["event"] != "31200"]
     parcel = normalize_parcel(raw)
     assert parcel["status"] == ParcelStatus.RETURNING
-    assert parcel["delivered"] is False
+    assert parcel["delivered"] is True
 
 
-async def test_real_return_leg_never_enters_the_delivered_list(hass):
+async def test_real_return_leg_enters_the_delivered_list(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
-        options={"parcels": [{"tracking_code": ACTIVE_CODE}]},
+        options={
+            "parcels": [{"tracking_code": ACTIVE_CODE}],
+            "delivered_filter_type": "parcels",
+        },
         unique_id=DOMAIN,
     )
     entry.add_to_hass(hass)
@@ -676,6 +689,6 @@ async def test_real_return_leg_never_enters_the_delivered_list(hass):
 
     active = await coordinator._async_update_data()
 
-    assert [p["status"] for p in active] == [ParcelStatus.RETURNING]
-    assert coordinator.delivered == []
-    assert coordinator.delivered_codes == set()
+    assert active == []
+    assert [p["status"] for p in coordinator.delivered] == [ParcelStatus.RETURNING]
+    assert coordinator.delivered_codes == {ACTIVE_CODE}

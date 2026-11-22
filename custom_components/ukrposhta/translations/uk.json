@@ -130,7 +130,7 @@
         "name": "Наступна доставка"
       },
       "en_route_to_pickup_point": {
-        "name": "Прямує до відділення",
+        "name": "Прямує до пункту видачі",
         "unit_of_measurement": "посилок"
       },
       "awaiting_pickup": {

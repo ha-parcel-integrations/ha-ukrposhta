@@ -35,10 +35,11 @@ you act in one of these areas:
   summary+diagnostic sensors. Add a new non-parcel sensor's unique_id to the set.
 - **Per-parcel sensors are removed by the summary sensor** via
   `entity_registry.async_remove` (self-removal races and leaves ghosts).
-- **The optional pickup-point summaries are a pair.** A carrier that can tell
-  a parcel is destined for a pickup point exposes
-  `en_route_to_pickup_point` for `pickup is true` before it arrives; one that
-  can reach `ParcelStatus.AT_PICKUP_POINT` also exposes `awaiting_pickup`.
+- **The pickup-point summaries are a pair.** A carrier that can deliver to a
+  pickup point or locker exposes both `en_route_to_pickup_point` and
+  `awaiting_pickup`, even before a real parcel has shown the status or flag
+  (they read 0 until then; record it in `PENDING_*`). A carrier without pickup
+  points exposes neither and keeps `pickup` constantly False.
   See *Parcel contract* in `CONVENTIONS.md`. Say "pickup point", not
   "ServicePoint"/"parcel shop"/"locker", for the generic concept; the
   example carrier demonstrates both canonical sensors.
@@ -67,9 +68,9 @@ you act in one of these areas:
   per code, even when that rescues it (the numeric event code and the status reported instead; no event name or
   other free text); only with nothing mappable does it report `unknown`. Once a `31200` or a `Return: `
   labelled event appears, that event and every later one is `returning`,
-  including the delivered codes the return leg reuses. A returning parcel is
-  therefore never terminal and keeps being polled.
-- **Fields that are `None` on purpose:** `pickup`, `pickup_point` (pending in
+  including the delivered codes the return leg reuses. A returning parcel keeps
+  being polled until its closing `41000` scan (see the return-leg note).
+- **Fields that are `None` on purpose:** `pickup_point` (pending in
   `PENDING_CAPABILITIES`), `sender`, `receiver`, `planned_from`, `planned_to`,
   `weight`, `dimensions`. Because there is no ETA, the calendar and
   `next_delivery` stay empty. **A parcel can now reach the hot tier**: `29500`
@@ -98,13 +99,27 @@ you act in one of these areas:
   revisits an office, so it is never a sequence to sort on.
 - **The return leg is live-confirmed.** A refusal (`31200`) is followed by
   forward codes whose `eventName` carries a `Return: ` prefix, ending in
-  `41000 Return: Delivered to Sender`. That last event is `returning`, not
-  delivered, with no `delivered_at`; a test asserts it end to end.
-- **`pickup_point` stays pending on purpose.** `21700` is followed by
-  `41000 Delivered to Recipient` on one parcel and by a recipient refusal at
-  the same branch on another, so one code covers both a counter collection and
-  a doorstep delivery. Publishing the office as a pickup point would be wrong
-  about half the time.
+  `41000 Return: Delivered to Sender`. Every event of the leg stays
+  `returning`, but when the final event is that `41000` the parcel is back at
+  the sender: `delivered` is true and `delivered_at` is that scan's date, so
+  it leaves the active list and is no longer polled. A parcel still on its way
+  back is `returning` with `delivered` false. Tests assert both end to end.
+- **Pickup.** `pickup` is a bool: true once any event mapped to
+  `at_pickup_point` (`21400`/`21700`), and it stays true after collection or a
+  return. The carrier sends no structured destination field, so a parcel only
+  becomes `pickup` on arrival. `en_route_to_pickup_point` counts every parcel
+  that reached `21700` and then moved on (`29500` out for delivery,
+  `31100`/`31300`/`31400` problem, or an in-transit scan), which can include a
+  doorstep delivery after a branch scan, since `21700` is ambiguous (see the
+  divergence note below).
+- **Contract divergence: `pickup` can be true for a doorstep delivery.**
+  Contract says `pickup` describes the route; here `21700` is followed by
+  `41000 Delivered to Recipient` on one real parcel and by a recipient refusal
+  at the same branch on another, so the code cannot tell a counter collection
+  from a doorstep delivery and `pickup` follows the status mapping.
+- **`pickup_point` stays pending on purpose.** The events name only a postal
+  index and an office label for every scan, never a point, so it is `None`
+  even when `pickup` is true.
 - The `value` field has always been `null` so far; its meaning is unknown and
   it is redacted in diagnostics like every other wire key.
 - **Unexpected event shapes** warn once per kind, structure only. No tracking-code format regex.

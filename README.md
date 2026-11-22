@@ -118,7 +118,7 @@ Standard HA removal applies: **Settings → Devices & Services → Ukrposhta →
 | `sensor.ukrposhta_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.ukrposhta_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.ukrposhta_next_delivery` | Earliest expected delivery moment across all active parcels (Ukrposhta reports none, so this stays empty) |
-| `sensor.ukrposhta_en_route_to_pickup_point` | Incoming parcels on their way to a pickup point that have not arrived yet |
+| `sensor.ukrposhta_en_route_to_pickup_point` | Parcels that reached a branch (event 21700) and then moved on; can include a doorstep delivery after a branch scan, as that event is ambiguous |
 | `sensor.ukrposhta_awaiting_pickup` | Incoming parcels that are ready to collect at a pickup point |
 | `sensor.ukrposhta_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `calendar.ukrposhta_deliveries` | Read-only calendar of expected deliveries, no extra API calls |
@@ -136,7 +136,7 @@ The `status` field is the carrier-agnostic enum shared by the whole integration 
 | `in_transit` | In the sorting network |
 | `at_pickup_point` | Waiting at a post office |
 | `delivered` | Delivered |
-| `returning` | Refused or undeliverable and going back to the sender; stays here through its final scan |
+| `returning` | Refused or undeliverable and going back to the sender; counts as delivered once the final return scan shows it is back |
 | `problem` | Ukrposhta reports an exception |
 | `unknown` | Not yet scanned, or a status we have not mapped yet |
 
