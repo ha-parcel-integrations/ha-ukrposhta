@@ -346,6 +346,7 @@ CANONICAL_KEYS = [
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "status",
     "raw_status",
     "delivered",
@@ -368,7 +369,7 @@ def test_normalize_publishes_exactly_the_canonical_keys():
 
 
 def test_capabilities_are_known_values():
-    assert CAPABILITIES <= KNOWN_CAPABILITIES
+    assert KNOWN_CAPABILITIES - {"contents"} >= CAPABILITIES
     assert PENDING_CAPABILITIES <= KNOWN_CAPABILITIES
 
 
@@ -403,6 +404,7 @@ def test_normalize_unproven_fields_stay_none():
     for key in (
         "sender",
         "receiver",
+        "contents",
         "planned_from",
         "planned_to",
         "pickup_point",
