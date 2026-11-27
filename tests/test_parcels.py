@@ -206,7 +206,7 @@ def test_parse_iso_handles_z_naive_and_garbage():
 
 
 def test_tracking_url_is_encoded():
-    assert tracking_url("A B/1") == "https://track.ukrposhta.ua/en/?barcode=A%20B%2F1"
+    assert tracking_url("A B/1") == "https://track.ukrposhta.ua/ua/?barcode=A%20B%2F1"
     assert tracking_url(None) is None
 
 
@@ -394,7 +394,7 @@ def test_normalize_delivered_parcel():
     assert parcel["raw_status"] == "41000 Delivered"
     assert parcel["delivered"] is True
     assert parcel["delivered_at"] == "2026-04-29T13:12:42+03:00"
-    assert parcel["url"] == f"https://track.ukrposhta.ua/en/?barcode={DELIVERED_CODE}"
+    assert parcel["url"] == f"https://track.ukrposhta.ua/ua/?barcode={DELIVERED_CODE}"
     assert parcel["history"] is None
 
 

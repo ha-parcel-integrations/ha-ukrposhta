@@ -94,7 +94,7 @@ TRACKING_API_URL = (
     "https://www.ukrposhta.ua/status-tracking/0.0.1/statuses"
     "?barcode={tracking_code}&lang=en"
 )
-TRACKING_URL = "https://track.ukrposhta.ua/en/?barcode={tracking_code}"
+TRACKING_URL = "https://track.ukrposhta.ua/ua/?barcode={tracking_code}"
 
 # Event dates carry no UTC offset. Europe/Kyiv is an assumption: no payload
 # has confirmed the wall-clock zone. Change this line if a parcel shows a
